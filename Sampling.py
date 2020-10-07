@@ -16,9 +16,12 @@ def playVideo(video, runProperties=None, waitTime=25, endWait=10000):
         region = runProperties["goodarea"]
     
     i = 0
+    pause = False
     while video.isOpened():
-        i += 1
-        ret, frame = video.read()
+
+        if not pause:
+            i += 1
+            ret, frame = video.read()
 
         # So long as we have another frame
         if ret:
@@ -30,14 +33,37 @@ def playVideo(video, runProperties=None, waitTime=25, endWait=10000):
 
             # This will display the image in a new window (similar to matlab figure windows)
             cv2.imshow('Frame', grayscaleFrame)
+
             # This just waits for a little after each image so it doens't go too fast
-            cv2.waitKey(waitTime)
+            # And so we can control the playback by pausing and skipping forward/backwards
+            keyPress = cv2.waitKey(waitTime)
+            if keyPress == 32: # Space bar
+                pause = not pause
+
+            if keyPress == 27: # Escape
+                break
+
+            if pause:
+
+                if keyPress == 81: # Left
+                    i -= 1
+                    video.set(cv2.CAP_PROP_POS_FRAMES, i)
+                    ret, frame = video.read()
+
+                if keyPress == 83: # Right
+                    i += 1
+                    video.set(cv2.CAP_PROP_POS_FRAMES, i)
+                    ret, frame = video.read()
+                
         else:
             break
 
-    print(f'Played {i} frames') 
+    #print(f'Played {i} frames') 
     # Wait at the end to close for 10s (default) or until a key is pressed
     cv2.waitKey(endWait)
+    
+    # Now we reset the video so that it can be played again
+    video.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
     # Close the pop up window
     cv2.destroyAllWindows()
