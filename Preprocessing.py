@@ -164,6 +164,22 @@ def loadVideo(dataFile, ignoreInvalidData = False):
 
     return videoFiles
 
+# This will read in the raw sensor data from each experiment, from the lvm file
+# The columns in this file can mean: t, f, x (if 3 columns) or t, f, fn, x (if 4 columns, not totally sure about this)
+def loadRawSensorData(dataFile):
+   
+    if not isinstance(dataFile, list):
+        sensorData = np.genfromtxt(f'{Settings.DATA_LOCATION}{dataFile}/{dataFile}.lvm')
+        
+        return sensorData
+
+
+    # Otherwise recurse, you know the drill at this point
+    sensorData = []
+    for filePath in dataFile:
+        sensorData.append(loadRawSensorData(filePath))
+
+    return sensorData
 
 # This will make sure that the data exists and give some stats
 # about various things. This is a good thing to run first to make
