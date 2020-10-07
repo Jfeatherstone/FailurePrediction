@@ -28,7 +28,7 @@ def playVideo(video, runProperties=None, waitTime=25, endWait=10000):
             # Grayscale, since they are grayscale images anyway
             grayscaleFrame = frame[:,:,0]
             # Crop if we can
-            if not region == None:
+            if not region.any() == None:
                 grayscaleFrame = grayscaleFrame[region[0]:region[1], region[2]:region[3]]
 
             # This will display the image in a new window (similar to matlab figure windows)
@@ -52,12 +52,12 @@ def playVideo(video, runProperties=None, waitTime=25, endWait=10000):
 
                 if keyPress == 83: # Right
                     i += 1
-                    video.set(cv2.CAP_PROP_POS_FRAMES, i)
                     ret, frame = video.read()
                 
         else:
             break
 
+    i -= 1 # Subtract the last extra increment
     #print(f'Played {i} frames') 
     # Wait at the end to close for 10s (default) or until a key is pressed
     cv2.waitKey(endWait)
@@ -68,4 +68,4 @@ def playVideo(video, runProperties=None, waitTime=25, endWait=10000):
     # Close the pop up window
     cv2.destroyAllWindows()
 
-    return
+    return i
