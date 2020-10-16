@@ -3,6 +3,7 @@
 
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 import Preprocessing
 import VideoAnalysis
@@ -85,7 +86,7 @@ def boxcarDownsample(x, kernel):
 
 # This one will do its best to line up two time arrays such that the
 # error doesn't grow compound throughout the sequence
-def timeAlignmentDownsample(highResTimeArr, highResXArr, lowResTimeArr, kernelGuess=None, deviation=5, debug=False):
+def timeAlignmentDownsample(highResTimeArr, highResXArr, lowResTimeArr, kernelGuess=None, deviation=5, debug=False, interpolate=True):
     """
     highResTimeArr: This is the array that will be used to sync with lowResTimeArr
 
@@ -102,6 +103,9 @@ def timeAlignmentDownsample(highResTimeArr, highResXArr, lowResTimeArr, kernelGu
 
     debug: If this is set to True, we will return [downsampledTimeArr, lowResXArr] instead of
     just lowResXArr
+
+    interpolate: Whether or not we should take a weighted average of the two closest time points
+    to get the downsampled X
     """
 
     # If a guess wasn't provided, we take the ratio of the lengths and increase deviation
@@ -135,8 +139,26 @@ def timeAlignmentDownsample(highResTimeArr, highResXArr, lowResTimeArr, kernelGu
         actualIndex = min(actualIndex, len(highResTimeArr)-1)
 
         # Save the value from the high res into the low res
-        lowResXArr[lowResIndex] = highResXArr[actualIndex]
         downsampledTimeArr[lowResIndex] = highResTimeArr[actualIndex]
+
+        # If we want to interpolate, we should find whether the actual time is before or after
+        # the low res one, and take the next closest point (on the other side of the actual time)
+        if interpolate:
+            dt = lowResTimeArr[lowResIndex] - highResTimeArr[actualIndex]
+            # Sometimes the the two points can line up exactly, which means we'll get an inf for a1
+            # so we have to check for that. In this case, we just add one to secondClosestIndex
+            # (since dt is zero, a1 will always be zero anyway
+            secondClosestIndex = actualIndex + int(np.sign(dt)) + 1*(dt == 0)
+            #print(actualIndex, secondClosestIndex)
+            # Our value takes the form t_1*a_1 + t_2*a_2 = t_actual and a_1 + a_2 = 1
+            a1 = dt / (highResTimeArr[secondClosestIndex] - highResTimeArr[actualIndex])
+            a2 = 1 - a1
+
+            #print(a1, lowResTimeArr[lowResIndex], highResTimeArr[actualIndex])
+
+            lowResXArr[lowResIndex] = highResXArr[secondClosestIndex]*a1 + highResXArr[actualIndex]*a2
+        else:
+            lowResXArr[lowResIndex] = highResXArr[actualIndex]
 
         # Increment
         highResIndex = actualIndex + kernelGuess
@@ -147,7 +169,7 @@ def timeAlignmentDownsample(highResTimeArr, highResXArr, lowResTimeArr, kernelGu
     return lowResXArr
 
 # Randomly sample a portion of a single video
-def randomSample(video, propertyFile, matFile, score, sampleLength=Settings.DEFAULT_SAMPLE_LENGTH, numSamples=1, preserveArrayType=False, downsampleMethod=timeAlignmentDownsample):
+def randomSample(video, propertyFile, matFile, score, sampleLength=Settings.DEFAULT_SAMPLE_LENGTH, numSamples=1, preserveArrayType=False, downsampleMethod=timeAlignmentDownsample, interpolate=True):
     """
     video: The video file that we want to sample from; can also be a list of video files
 
@@ -166,13 +188,20 @@ def randomSample(video, propertyFile, matFile, score, sampleLength=Settings.DEFA
 
     preserveArrayType: If numSamples is 1, should we return an array of the shape (1,x,y,z) (True) or cull the extra dimensions (x,y,z) (False)
 
+    downsampleMethod: How we should downsample the high res force data. timeAlignmentDownsample has been shown to be significantly better than
+    the other two I have implemented, so that one should almost always be used. For more info, see LaBlog around the beginning of October 2020
+
+    interpolate: Whether we interpolate when using the timeAlignmentDownsample method. If a different downsampling method is specified, this
+    parameter does nothing
+
     return type:
 
-    We return an array of shape (numSamples, sampleLength, 3) where the 3 entries in the last dimension are:
+    We return an array of shape (numSamples, 4, sampleLength) where the 4 entries in the middle dimension are:
 
     [0]: time
     [1]: score
     [2]: forceSensorReading
+    [3]: eventsInInterval
 
     Note that the first dimension may be collapsed if numSamples = 1; see preserveArrayType for more info
     """
@@ -188,11 +217,12 @@ def randomSample(video, propertyFile, matFile, score, sampleLength=Settings.DEFA
         numFrames = len(fullTimeArr)
 
         # See return type explanation above for why it has this shape
-        returnArr = np.zeros([numSamples, sampleLength, 3])
+        returnArr = np.zeros([numSamples, 4, sampleLength])
 
         for i in range(numSamples):
             # Randomly generate an interval of time for the video 
             randomStartFrame = np.random.randint(0, numFrames - sampleLength)
+            #randomStartFrame = 100 # TESTING, remove later
             endFrame = randomStartFrame + sampleLength
 
             # Crop the full array down to the sample
@@ -224,9 +254,83 @@ def randomSample(video, propertyFile, matFile, score, sampleLength=Settings.DEFA
                 # of padding on each high res array. The extraneous values won't make a 
                 # difference if they aren't used, since each value is picked out, not just sliced
                 padding = min(10, len(matFile["f"]))
-                timeSensorArr, forceSensorArr = downsampleMethod(matFile["t"][beginIndex:endIndex+padding], matFile["f"][beginIndex:endIndex+padding], timeArr, int(downsampleKernel), debug=True)
+                timeSensorArr, forceSensorArr = downsampleMethod(matFile["t"][beginIndex:endIndex+padding], matFile["f"][beginIndex:endIndex+padding], timeArr, int(downsampleKernel), debug=True, interpolate=interpolate)
             else:
                 forceSensorArr = downsampleMethod(matFile["f"][beginIndex:endIndex], int(downsampleKernel))
                 timeSensorArr = downsampleMethod(matFile["t"][beginIndex:endIndex], int(downsampleKernel))
 
-            return [timeArr, scoreArr, timeSensorArr]
+            # The next task is to get a list of detected force events that happen within our sampled interval
+            # Every time in matFile["time"] should line up with a point in matFile["t"], so we just have to
+            # walk through the times
+
+            # First we combine the information across a few different arrays
+            eventTimes = matFile["time"]
+            eventMagnitudes = matFile["deltaF"] * matFile["good"]
+    
+            eventsInInterval = np.zeros(sampleLength)
+
+            for k in range(len(eventTimes)):
+                if eventTimes[k] > timeArr[0] and eventTimes[k] < timeArr[-1]:
+                    # Save it in the closest time to the actual event time
+                    eventsInInterval[np.argmin(abs(timeArr - eventTimes[k]))] = eventMagnitudes[k]
+
+            # Save the values for returning
+            returnArr[i][0][:] = timeArr[:]
+            returnArr[i][1][:] = scoreArr[:]
+            returnArr[i][2][:] = forceSensorArr[:]
+            returnArr[i][3][:] = eventsInInterval[:]
+
+        # Collapse the first dimension if possible (and requested)
+        if numSamples == 1 and not preserveArrayType:
+            return returnArr[0]
+
+        return returnArr
+
+        # Otherwise return the proper array
+
+    # Do the usual vectorization method using recursion
+    # We randomly choose a video in the list, and then perform the random selection for 1 sample from that
+    # and then repeat
+    returnArr = np.zeros([numSamples, 4, sampleLength])
+    for i in range(numSamples):
+        clipSelect = np.random.randint(0, len(video))
+
+        returnArr[i] = randomSample(video[clipSelect], propertyFile[clipSelect], matFile[clipSelect], score, sampleLength=sampleLength, numSamples=1, downsampleMethod=timeAlignmentDownsample, interpolate=interpolate)
+
+    return returnArr
+
+
+# This is just to take a look at a given sample
+# Designed to be used directly with the output of randomSample
+# Arguments are setup so that you can provide the outout of randomSample directly
+# or can specify each array individually
+def visualizeSample(sample=None, tArr=np.array([]), sArr=np.array([]), fArr=np.array([]), events=np.array([]), savePath=None):
+
+    if not tArr.any():
+        tArr, sArr, fArr, events = sample
+
+    fig, ax1 = plt.subplots()
+    
+    # I wanted the colors to look pretty so I used some that aren't used very often
+    # (Don't worry, I've used my colorblindness simulator to make sure they are
+    # distinguishable!)
+    ax1Color = 'darkcyan'
+    ax1.plot(tArr, fArr, color=ax1Color)
+    ax1.set_ylabel('Force Sensor Reading', color=ax1Color)
+    ax1.tick_params(axis='y', labelcolor=ax1Color)
+
+    ax2Color = 'indigo'
+    ax2 = ax1.twinx()
+    ax2.plot(tArr, sArr, color=ax2Color)
+    ax2.tick_params(axis='y', labelcolor=ax2Color)
+    ax2.set_ylabel('Score', color=ax2Color)
+
+    for time in [tArr[i] for i in range(len(tArr)) if events[i] != 0]:
+        ax1.axvline(time, linestyle='--', color='tab:gray', alpha=.8)
+
+    ax1.set_xlim([tArr[0] - 10, tArr[-1] + 10])
+    fig.patch.set_facecolor('white')
+
+    if savePath != None:
+        plt.savefig(savePath)
+    plt.show()
