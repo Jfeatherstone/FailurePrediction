@@ -1,2 +1,0 @@
-100 30 25 100
-time averageBrightness force event

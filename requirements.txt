@@ -2,3 +2,4 @@ scipy
 numpy
 matplotlib
 opencv-python
+progressbar2-3.53.1

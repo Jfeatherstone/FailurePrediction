@@ -49,7 +49,8 @@ def randomPredictionSample(video, propertyFile, matFile, scores, sampleLength=Se
         numFrames = len(fullTimeArr)
 
         # This line will probably take the longest to calculate
-        fullScoreArr = np.array([s(video, propertyFile) for s in scores])
+        fullScoreArr = VideoAnalysis.analyzeVideo(video, scores, propertyFile)
+        #fullScoreArr = np.array([s(video, propertyFile) for s in scores])
 
         # See return type explanation above for why it has this shape
         inputArr = np.zeros([numSamples, len(scores)+1, sampleLength])
@@ -145,7 +146,8 @@ def fullPositivePredictionSample(video, propertyFile, matFile, scores, sampleLen
         minIntervalDist = dt*(sampleLength+1)
 
         # This line will probably take the longest to calculate
-        fullScoreArr = np.array([s(video, propertyFile) for s in scores])
+        fullScoreArr = VideoAnalysis.analyzeVideo(video, scores, propertyFile)
+        #fullScoreArr = np.array([s(video, propertyFile) for s in scores])
 
         # See return type explanation above for why it has this shape
         # We use python lists instead of numpy since we are appending (1, 1, X) length arrays
@@ -262,7 +264,8 @@ def negativePredictionSample(video, propertyFile, matFile, scores, numSamples, s
         minIntervalDist = dt*(sampleLength+1)
 
         # This line will probably take the longest to calculate
-        fullScoreArr = np.array([s(video, propertyFile) for s in scores])
+        fullScoreArr = VideoAnalysis.analyzeVideo(video, scores, propertyFile)
+        #fullScoreArr = np.array([s(video, propertyFile) for s in scores])
 
         # See return type explanation above for why it has this shape
         inputArr = np.zeros([numSamples, len(scores)+1, sampleLength])
@@ -351,7 +354,8 @@ def fullPredictionSample(video, propertyFile, matFile, scores, sampleLength=Sett
         minIntervalDist = dt*(sampleLength+1)
 
         # This line will probably take the longest to calculate
-        fullScoreArr = np.array([s(video, propertyFile) for s in scores])
+        fullScoreArr = VideoAnalysis.analyzeVideo(video, scores, propertyFile)
+        #fullScoreArr = np.array([s(video, propertyFile) for s in scores])
 
         # See return type explanation above for why it has this shape
         # We use python lists instead of numpy since we are appending (1, 1, X) length arrays
