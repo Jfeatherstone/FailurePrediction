@@ -102,7 +102,7 @@ def averageGSquared(frame):
     frame : numpy.array
         The frame to compute the average of (or path to an image)
     &#34;&#34;&#34;
-
+    
     properFrame = checkImageType(frame)
 
     gSquared = 0
@@ -140,7 +140,8 @@ def averageGSquared(frame):
     
     # Divide out the size of the image, since we want an average
     gSquared /= np.shape(properFrame)[0]*np.shape(properFrame)[1]
-    return gSquared
+    # We take the mean because there are the 3 pixel values
+    return np.mean(gSquared)
 
 
 def varianceGSquared(frame):
@@ -276,7 +277,7 @@ varianceGSquared.analysis_type = Settings.IMAGE_ANALYSIS</code></pre>
     frame : numpy.array
         The frame to compute the average of (or path to an image)
     &#34;&#34;&#34;
-
+    
     properFrame = checkImageType(frame)
 
     gSquared = 0
@@ -314,7 +315,8 @@ varianceGSquared.analysis_type = Settings.IMAGE_ANALYSIS</code></pre>
     
     # Divide out the size of the image, since we want an average
     gSquared /= np.shape(properFrame)[0]*np.shape(properFrame)[1]
-    return gSquared</code></pre>
+    # We take the mean because there are the 3 pixel values
+    return np.mean(gSquared)</code></pre>
 </details>
 </dd>
 <dt id="slider.ImageAnalysis.checkImageType"><code class="name flex">

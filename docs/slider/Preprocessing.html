@@ -82,9 +82,9 @@ def loadSliderData(DATA_LOCATION=Settings.DATA_LOCATION, IMAGE_DIR=Settings.IMAG
     Returns
     -------
 
-    list(0) : Photoelastic images (or paths; see `loadImages`)
+    list(0) : Photoelastic images (or paths; see loadImages)
     
-    list(1) : White light images (or paths; see `loadImages`)
+    list(1) : White light images (or paths; see loadImages)
 
     list(2) : Force data
 
@@ -104,18 +104,19 @@ def loadSliderData(DATA_LOCATION=Settings.DATA_LOCATION, IMAGE_DIR=Settings.IMAG
     predictedTrackingFiles = [f&#39;shape0_{index}&#39; for index in indices]
     actualTrackingFiles = os.listdir(DATA_LOCATION + TRACKING_DIR)
 
-    # We can&#39;t read in cached data if the data doesn&#39;t currently exist
-    if not os.path.exists(DATA_LOCATION + CACHE_DIR):
-        loadCachedData = False
+    # Make sure the cache directories actually exist
+    if saveCachedData or loadCachedData:
+        if not os.path.exists(DATA_LOCATION + CACHE_DIR):
+            # We can&#39;t read in cached data if the data doesn&#39;t currently exist
+            loadCachedData = False
 
-        # Next, create that folder if we are later going to save something in it
-        if saveCachedData:
+            # Next, create that folder if we are later going to save something in it
             os.mkdir(DATA_LOCATION + CACHE_DIR)
 
-            # Now make the subdirectories
-            for folder in [IMAGE_DIR, FORCE_DIR, TRACKING_DIR]:
-                if not os.path.exists(DATA_LOCATION + CACHE_DIR + folder):
-                    os.mkdir(DATA_LOCATION + CACHE_DIR + folder)
+        # Now make the subdirectories
+        for folder in [IMAGE_DIR, FORCE_DIR, TRACKING_DIR]:
+            if not os.path.exists(DATA_LOCATION + CACHE_DIR + folder):
+                os.mkdir(DATA_LOCATION + CACHE_DIR + folder)
 
     photoelasticImageData = []
     whiteLightImageData = []
@@ -365,9 +366,11 @@ will be saved inside the CACHE_DIR folder.</dd>
 <dd>The folder name (not full path) of the directory that may be used to read/save the cached data</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>list(0) : Photoelastic images (or paths; see <code>loadImages</code>)</p>
-<p>list(1) : White light images (or paths; see <code>loadImages</code>)</p>
 <dl>
+<dt><code>list(0) : Photoelastic images (or paths; see loadImages)</code></dt>
+<dd>&nbsp;</dd>
+<dt><code>list(1) : White light images (or paths; see loadImages)</code></dt>
+<dd>&nbsp;</dd>
 <dt><code>list(2) : Force data</code></dt>
 <dd>&nbsp;</dd>
 <dt><code>list(3) : Tracking data</code></dt>
@@ -423,9 +426,9 @@ will be saved inside the CACHE_DIR folder.</dd>
     Returns
     -------
 
-    list(0) : Photoelastic images (or paths; see `loadImages`)
+    list(0) : Photoelastic images (or paths; see loadImages)
     
-    list(1) : White light images (or paths; see `loadImages`)
+    list(1) : White light images (or paths; see loadImages)
 
     list(2) : Force data
 
@@ -445,18 +448,19 @@ will be saved inside the CACHE_DIR folder.</dd>
     predictedTrackingFiles = [f&#39;shape0_{index}&#39; for index in indices]
     actualTrackingFiles = os.listdir(DATA_LOCATION + TRACKING_DIR)
 
-    # We can&#39;t read in cached data if the data doesn&#39;t currently exist
-    if not os.path.exists(DATA_LOCATION + CACHE_DIR):
-        loadCachedData = False
+    # Make sure the cache directories actually exist
+    if saveCachedData or loadCachedData:
+        if not os.path.exists(DATA_LOCATION + CACHE_DIR):
+            # We can&#39;t read in cached data if the data doesn&#39;t currently exist
+            loadCachedData = False
 
-        # Next, create that folder if we are later going to save something in it
-        if saveCachedData:
+            # Next, create that folder if we are later going to save something in it
             os.mkdir(DATA_LOCATION + CACHE_DIR)
 
-            # Now make the subdirectories
-            for folder in [IMAGE_DIR, FORCE_DIR, TRACKING_DIR]:
-                if not os.path.exists(DATA_LOCATION + CACHE_DIR + folder):
-                    os.mkdir(DATA_LOCATION + CACHE_DIR + folder)
+        # Now make the subdirectories
+        for folder in [IMAGE_DIR, FORCE_DIR, TRACKING_DIR]:
+            if not os.path.exists(DATA_LOCATION + CACHE_DIR + folder):
+                os.mkdir(DATA_LOCATION + CACHE_DIR + folder)
 
     photoelasticImageData = []
     whiteLightImageData = []

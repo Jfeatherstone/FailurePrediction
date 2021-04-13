@@ -73,7 +73,7 @@ def averageGSquared(frame):
     frame : numpy.array
         The frame to compute the average of (or path to an image)
     """
-
+    
     properFrame = checkImageType(frame)
 
     gSquared = 0
@@ -111,7 +111,8 @@ def averageGSquared(frame):
     
     # Divide out the size of the image, since we want an average
     gSquared /= np.shape(properFrame)[0]*np.shape(properFrame)[1]
-    return gSquared
+    # We take the mean because there are the 3 pixel values
+    return np.mean(gSquared)
 
 
 def varianceGSquared(frame):

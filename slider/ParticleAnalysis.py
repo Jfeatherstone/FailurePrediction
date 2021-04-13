@@ -29,7 +29,9 @@ def _dist(p1, p2):
 
 def coordinationNumbers(pos_x, pos_y, rot_angle, radii, padding=5):
     """
-    Calculate the coordination number (average number of contacts) for a set of particle positions
+    Calculate the coordination number (number of contacts) for a set of particle positions.
+    Contacts are defined when the distance between the particle centers is smaller than
+    the sum of the two radii, or within an amount defined by padding
 
     Parameters
     ----------
@@ -48,15 +50,20 @@ def coordinationNumbers(pos_x, pos_y, rot_angle, radii, padding=5):
 
     padding : float
         The maximum difference the particle edges can be from each other and still be considered touching (default=5)
+
+    Returns
+    -------
+
+    numpy.ndarray : Number of contacts for each particle (same length as any of the input arrays)
     """
 
     # Not the most efficient implementation just yet, but functional
-    coordinationNum = np.zeros(len(trackingData))
-    for i in range(len(trackingData)):
+    coordinationNum = np.zeros(len(pos_x))
+    for i in range(len(pos_x)):
         # Calculate the distance between each particle center
-        distances = [_dist(trackingData[i,0:2], trackingData[j,0:2]) for j in range(len(trackingData)) if j != i]
+        distances = [_dist([pos_x[i], pos_y[i]], [pos_x[j], pos_y[j]]) for j in range(len(pos_x)) if j != i]
         # Calculate the sum of radii for each pair
-        radiiSums = [trackingData[i,3] + trackingData[j,3] for j in range(len(trackingData)) if j != i]
+        radiiSums = [radii[i] + radii[j] for j in range(len(pos_x)) if j != i]
 
         # The coordination number is the number of pairs for which the radii sum (+padding) is greater than
         # the center distance
@@ -69,7 +76,9 @@ def coordinationNumbers(pos_x, pos_y, rot_angle, radii, padding=5):
 def averageCoordinationNumber(pos_x, pos_y, rot_angle, radii, padding=5):
     """
     Calculate the average coordination number for a set of particles. Essentially a wrapper for
-    coordinationNumbers that averages afterwards
+    coordinationNumbers that averages afterwards.
+    Contacts are defined when the distance between the particle centers is smaller than
+    the sum of the two radii, or within an amount defined by padding
 
     Parameters
     ----------
@@ -88,9 +97,13 @@ def averageCoordinationNumber(pos_x, pos_y, rot_angle, radii, padding=5):
 
     padding : float
         The maximum difference the particle edges can be from each other and still be considered touching (default=5)
+
+    Returns
+    -------
+    float : The average number of contacts for all particles
     """
 
-    return np.mean(coordinationNumbers(trackingData, padding=padding))
+    return np.mean(coordinationNumbers(pos_x, pos_y, rot_angle, radii, padding=padding))
 
 
 """

@@ -17,6 +17,9 @@ TRACKING_DIR = 'Tracking/'
 # Where we can cache certain things for easier reading
 CACHE_DIR = 'Cache/'
 
+# Where cached copies of the analysis results will be stored
+ANALYSIS_DIR = "Analysis/"
+
 # The different analysis types, so we can provide the correct
 # arguments
 IMAGE_ANALYSIS = 'image'
