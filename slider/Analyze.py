@@ -6,8 +6,10 @@ import pickle
 import os
 import progressbar
 
+import networkx as nx
+
 from slider import Settings
-from slider import ImageAnalysis, ParticleAnalysis
+from slider import ImageAnalysis, ParticleAnalysis, NetworkAnalysis, CommunityAnalysis
 
 def checkImageType(frame):
     """
@@ -153,7 +155,7 @@ def analyze(photoelasticImageData, trackingData, metrics, metadata=None, loadCac
         imageAnalysisMetrics = [(confirmedMetrics[i], metricIndices[i]) for i in range(len(confirmedMetrics)) if confirmedMetrics[i].analysis_type == Settings.IMAGE_ANALYSIS]
         particleAnalysisMetrics = [(confirmedMetrics[i], metricIndices[i]) for i in range(len(confirmedMetrics)) if confirmedMetrics[i].analysis_type == Settings.PARTICLE_ANALYSIS]
         networkAnalysisMetrics = [(confirmedMetrics[i], metricIndices[i]) for i in range(len(confirmedMetrics)) if confirmedMetrics[i].analysis_type == Settings.NETWORK_ANALYSIS]
-
+        communityAnalysisMetrics = [(confirmedMetrics[i], metricIndices[i]) for i in range(len(confirmedMetrics)) if confirmedMetrics[i].analysis_type == Settings.COMMUNITY_ANALYSIS]
         # Now just calculate the metrics for any that could not be loaded in
         # Iterate over all timesteps for the trial
         # It is likely more efficient to run each type of analysis separately, since
@@ -211,6 +213,32 @@ def analyze(photoelasticImageData, trackingData, metrics, metadata=None, loadCac
 
                 if progress:
                     bar.update(i)
+
+        # COMMUNITY
+        if len(communityAnalysisMetrics) > 0:
+            if progress:
+                print('Performing community analysis:')
+                bar = progressbar.ProgressBar(max_value=numFrames)
+
+            for i in range(numFrames):
+                pos_x = trackingData[i][:,0]
+                pos_y = trackingData[i][:,1]
+                radii = trackingData[i][:,3]
+                frame = checkImageType(photoelasticImageData[i])
+
+                graph = nx.from_numpy_array(NetworkAnalysis.genWeightedAdjacencyMatrix(pos_x, pos_y, radii, frame))
+
+                # The number of detections to average over
+                numDetections = 5
+                for k in range(numDetections):
+                    partition = CommunityAnalysis.genCommunityDetection(graph)
+
+                    for j in range(len(communityAnalysisMetrics)):
+                        finalMetrics[communityAnalysisMetrics[j][1],i] += communityAnalysisMetrics[j][0](partition)/numDetections
+
+                if progress:
+                    bar.update(i)
+
         # If we want to save the results we just calculated, do that
         if saveCachedResults:
             # The folders should already all exist (see above)

@@ -4,6 +4,8 @@ from slider import Settings
 
 import cv2
 
+from sklearn.neighbors import KDTree
+
 """
 Particle Analysis Methods
 ----------------------
@@ -27,7 +29,7 @@ def _dist(p1, p2):
     """
     return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
-def coordinationNumbers(pos_x, pos_y, rot_angle, radii, padding=5):
+def coordinationNumbers(pos_x, pos_y, rot_angle, radii, padding=2):
     """
     Calculate the coordination number (number of contacts) for a set of particle positions.
     Contacts are defined when the distance between the particle centers is smaller than
@@ -57,23 +59,21 @@ def coordinationNumbers(pos_x, pos_y, rot_angle, radii, padding=5):
     numpy.ndarray : Number of contacts for each particle (same length as any of the input arrays)
     """
 
-    # Not the most efficient implementation just yet, but functional
-    coordinationNum = np.zeros(len(pos_x))
+    points = np.array(list(zip(pos_x, pos_y)))
+    kdTree = KDTree(points, leaf_size=10)
+    coordinationNum = np.zeros(len(points)) 
+
+    # In 2D, 8 neighbors should be more than enough
+    # +1 is so we can remove the actual point itself
+    dist, ind = kdTree.query(points, k=8+1)
+    
     for i in range(len(pos_x)):
-        # Calculate the distance between each particle center
-        distances = [_dist([pos_x[i], pos_y[i]], [pos_x[j], pos_y[j]]) for j in range(len(pos_x)) if j != i]
-        # Calculate the sum of radii for each pair
-        radiiSums = [radii[i] + radii[j] for j in range(len(pos_x)) if j != i]
+        coordinationNum[i] = sum([1 for j in range(len(ind[i])) if radii[i] + radii[ind[i][j]] + padding > dist[i][j]])
 
-        # The coordination number is the number of pairs for which the radii sum (+padding) is greater than
-        # the center distance
-        coordinationNum[i] = sum([1 for j in range(len(radiiSums)) if radiiSums[j] + padding > distances[j]]) 
-
-    # Divide out the number of particles to get the average
     return coordinationNum
 
 
-def averageCoordinationNumber(pos_x, pos_y, rot_angle, radii, padding=5):
+def averageCoordinationNumber(pos_x, pos_y, rot_angle, radii, padding=2):
     """
     Calculate the average coordination number for a set of particles. Essentially a wrapper for
     coordinationNumbers that averages afterwards.
@@ -121,6 +121,5 @@ be the same for all types of methods, but it's value will be different
 The attribute for ParticleAnalysis methods is: analysis_type = Settings.PARTICLE_ANALYSIS
 """
 
-coordinationNumbers.analysis_type = Settings.PARTICLE_ANALYSIS
 averageCoordinationNumber.analysis_type = Settings.PARTICLE_ANALYSIS
 

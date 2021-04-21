@@ -136,7 +136,7 @@ def predictionSample(fullMetrics, failureIndices, timeArr=None, desiredOutcome=N
 
             # Fancy way to search for a time between our requested interval. I am not sure if this is actually
             # faster than a regular search, but it is reasonably easy to implement
-            failureInInterval = True in ((confirmedFailureIndices - randomBeginIndex)[confirmedFailureIndices - randomBeginIndex > 0] < sampleLength)
+            failureInInterval = True in ((confirmedFailureIndices - randomBeginIndex)[confirmedFailureIndices - randomBeginIndex > 0] < sampleLength+5)
             #print((eventArr - failureIntervalStart)[eventArr - failureIntervalStart > 0])
             #print(failureInInterval)
             

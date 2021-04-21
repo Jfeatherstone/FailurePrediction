@@ -27,3 +27,5 @@ IMAGE_ANALYSIS = 'image'
 PARTICLE_ANALYSIS = 'particle'
 
 NETWORK_ANALYSIS = 'network'
+
+COMMUNITY_ANALYSIS = 'community'

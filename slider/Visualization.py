@@ -30,7 +30,7 @@ def visualizeTrackedParticles(trackingData, image=None, ax=None):
     if ax == None:
         fig, ax = plt.subplots()
 
-    if type(image) != None:
+    if image != None:
         # The image could either be the proper image data, or a path to the image
         # so we have to check to either one
         if isinstance(image, str):
@@ -48,6 +48,51 @@ def visualizeTrackedParticles(trackingData, image=None, ax=None):
     return ax
 
 
+def visualizeTrackedParticlesAndCommunities(trackingData, communities, image=None, colors=None, ax=None):
+    r"""
+    Draw tracked particles onto a figure.
+
+    Parameters
+    ----------
+
+    trackingData : list(2) (num_particles, 4)
+        List of tracking data for a single time step, where the last dimension is organized as:
+        (x_pos, y_pos, rotation_angle, radius).
+
+    image : str or np.array
+        An image that will be drawn under the particles if provided. Can be provided either as
+        actual image data, or as a path to an image.
+
+    ax : matplotlib.axis
+        An axis to draw the data on if provided.
+
+    Returns
+    -------
+
+    matplotlib.axis : The axis the data is plotted on (whether one is provided or not)
+    """
+    if not isinstance(colors, list):
+        colors = genRandomColors(max(communities)+1)
+
+    if ax == None:
+        fig, ax = plt.subplots()
+
+    if image != None:
+        # The image could either be the proper image data, or a path to the image
+        # so we have to check to either one
+        if isinstance(image, str):
+            # I don't want to overwrite the image itself, so create a new var for that
+            tempImage = np.array(cv2.imread(image))
+        else:
+            tempImage = image
+        ax.imshow(tempImage)
+
+    # Plot circles over all of the detected particles
+    for i in range(len(trackingData)):
+        c = plt.Circle((trackingData[i,0], trackingData[i,1]), trackingData[i,3], alpha=.5, color=colors[communities[i]])
+        ax.add_artist(c)
+
+    return ax
 
 def _dist(p1, p2):
     """
@@ -98,3 +143,45 @@ def markParticleContacts(trackingData, image, ax=None, padding=5, pointRadius=5)
         ax.add_artist(c)
 
     return ax
+
+def visualizePredictionSample(inputArr, outputVal, ax=None, includesTime=True, metricList=None):
+    if ax == None:
+        fig, ax = plt.subplots()
+
+    if includesTime:
+        xArr = inputArr[-1,:]
+    else:
+        xArr = np.arange(len(inputArr[0]))
+
+    for i in range(len(inputArr) - int(includesTime)):
+        subtractMean = inputArr[i,:] - np.mean(inputArr[i,:])
+        if isinstance(metricList, list):
+            ax.plot(xArr, subtractMean/np.max(abs(subtractMean)), label=metricList[i].__name__)
+        else:
+            ax.plot(xArr, subtractMean/np.max(abs(subtractMean)))
+
+    if outputVal:
+        zoneColor = 'green'
+    else:
+        zoneColor = 'red'
+
+    fillX = [xArr[-1], xArr[-1] + (xArr[1] - xArr[0])]
+    fillY = [-1, 1]
+
+    ax.fill([fillX[0], fillX[0], fillX[1], fillX[1]], [fillY[0], fillY[1], fillY[1], fillY[0]], color=zoneColor, alpha=.5)
+
+    if isinstance(metricList, list):
+        ax.legend()
+    ax.set_yticks([])
+
+    return ax
+
+def rgb_to_hex(rgb):
+    return '%02x%02x%02x' % rgb
+
+def genRandomColors(size, seed=21):
+    np.random.seed(seed)
+
+    randomColors = [f"#{rgb_to_hex(tuple(np.random.choice(range(256), size=3).flatten()))}" for i in range(size)]
+
+    return randomColors
