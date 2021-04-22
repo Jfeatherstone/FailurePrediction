@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 import cv2
 
-def visualizeTrackedParticles(trackingData, image=None, ax=None):
+def visualizeTrackedParticles(trackingData, image=None, ax=None, color='blue'):
     r"""
     Draw tracked particles onto a figure.
 
@@ -42,7 +42,7 @@ def visualizeTrackedParticles(trackingData, image=None, ax=None):
 
     # Plot circles over all of the detected particles
     for i in range(len(trackingData)):
-        c = plt.Circle((trackingData[i,0], trackingData[i,1]), trackingData[i,3], alpha=.5)
+        c = plt.Circle((trackingData[i,0], trackingData[i,1]), trackingData[i,3], alpha=.5, fill=color)
         ax.add_artist(c)
 
     return ax

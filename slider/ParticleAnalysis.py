@@ -106,6 +106,51 @@ def averageCoordinationNumber(pos_x, pos_y, rot_angle, radii, padding=2):
     return np.mean(coordinationNumbers(pos_x, pos_y, rot_angle, radii, padding=padding))
 
 
+def DSquaredMin(initialParticlePos, finalParticlePos, refParticleIndex=0):
+    """
+
+    Parameters
+    ----------
+
+    initialParticlePos : numpy.ndarray or list
+        An array or list of initial particle posisitions of shape (N,d) where d is the dimension of the space,
+        and N is the number of particles.
+
+    finalParticlePos : numpy.ndarray or list
+        An array or list of final particle posisitions of shape (N,d) where d is the dimension of the space,
+        and N is the number of particles.
+    """
+
+    numParticles, dim = np.shape(initialParticlePos)
+
+    # The delta function
+    delta = np.identity(dim)
+
+    # Calculate the optimal epsilon (strain)
+    X = np.zeros([dim, dim])
+    Y = np.zeros([dim, dim])
+    epsilon = np.zeros([dim, dim])
+
+    for i in range(dim):
+        for j in range(dim):
+            X[i,j] = np.sum([(initialParticlePos[n][i] - initialParticlePos[refParticleIndex][i]) * (finalParticlePos[n][j] - finalParticlePos[refParticleIndex][j]) for n in range(numParticles) if n != refParticleIndex])
+            Y[i,j] = np.sum([(initialParticlePos[n][i] - initialParticlePos[refParticleIndex][i]) * (initialParticlePos[n][j] - initialParticlePos[refParticleIndex][j]) for n in range(numParticles) if n != refParticleIndex])
+
+    for i in range(dim):
+        for j in range(dim):
+            epsilon[i,j] = np.sum([X[i,k]/Y[j,k] for k in range(dim)]) - delta[i,j]
+
+    # Now actually calculate the D squared min
+    DSqrMin = 0
+    for n in range(numParticles):
+        if n == refParticleIndex:
+            continue
+        for j in range(dim):
+            DSqrMin += (finalParticlePos[n][i] - finalParticlePos[refParticleIndex][i] - np.sum([(delta[i,j] + epsilon[i,j]) * (initialParticlePos[n][j] - initialParticlePos[refParticleIndex][j]) for j in range(dim)]))**2
+
+    return DSqrMin
+
+
 """
 Attribute Marking
 -----------------
